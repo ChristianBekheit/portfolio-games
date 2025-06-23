@@ -1,0 +1,51 @@
+extends Node2D
+
+@onready var camera: Camera2D = $Path2D/PathFollow2D/Camera2D
+@onready var pathfollower = $Path2D/PathFollow2D
+
+var is_openingscene = false
+var has_player_entered = false
+var player = null
+var is_pathfollowing = false
+
+
+func _physics_process(delta: float) -> void:
+	if is_openingscene and is_pathfollowing:
+		var speed = .001 
+		# Change speed at specific progress values
+		if pathfollower.progress_ratio >= 0.27 and pathfollower.progress_ratio < 0.35:
+			speed = 0.0003  # Slow down
+		elif pathfollower.progress_ratio >= 0.5 and pathfollower.progress_ratio < 0.6:
+			speed = 0.002  # Speed up
+		elif pathfollower.progress_ratio >= 0.7 and pathfollower.progress_ratio < 0.71:
+			speed = 0  # Pause
+			# You can also run a timer here if you want to wait
+
+		pathfollower.progress_ratio += speed
+
+		if pathfollower.progress_ratio >= 1:
+			cutscene_ending()
+		if pathfollower.progress_ratio == 0.27:
+			await get_tree().create_timer(1).timeout
+
+func _on_playdetect_body_entered(body):
+	if body.is_in_group("player"):
+		
+		player = body
+		if !has_player_entered:
+			has_player_entered = true
+			cutscene_opening()
+	
+func cutscene_opening():
+	is_openingscene = true
+	player.camera.enabled = false
+	camera.enabled = true
+	is_pathfollowing = true
+	# Disable player input
+	player.can_move = false
+
+func cutscene_ending():
+	is_pathfollowing = false
+	is_openingscene = false
+	camera.enabled = false
+	player.camera.enabled=true
